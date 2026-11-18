@@ -1,10 +1,10 @@
 /**
- * Quadros "[Observação]" dentro de um item da linha do tempo da inscrição.
- * Os dados vêm de $MAPAS.config.phaseObservations: só as observações das fases em que a
+ * Quadros "[Comunicado]" dentro de um item da linha do tempo da inscrição.
+ * Os dados vêm de $MAPAS.config.phaseAnnouncements: só os comunicados das fases em que a
  * inscrição da página está (o servidor já filtrou).
  */
-app.component('phase-observations-timeline', {
-    template: $TEMPLATES['phase-observations-timeline'],
+app.component('phase-announcements-timeline', {
+    template: $TEMPLATES['phase-announcements-timeline'],
 
     props: {
         // item da linha do tempo: oportunidade (coleta/resultado) ou configuração de avaliação
@@ -15,8 +15,8 @@ app.component('phase-observations-timeline', {
     },
 
     computed: {
-        observations() {
-            const all = $MAPAS.config.phaseObservations || [];
+        announcements() {
+            const all = $MAPAS.config.phaseAnnouncements || [];
             return all.filter((obs) => obs.phaseType === this.phase.__objectType && String(obs.phaseId) === String(this.phase.id));
         },
     },
