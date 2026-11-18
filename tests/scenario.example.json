@@ -1,0 +1,14 @@
+{
+  "opportunity": 8,
+  "evaluationPhase": {"type": "evaluationmethodconfiguration", "id": 4},
+  "otherPhaseId": 27,
+  "password": "Teste@2026",
+  "users": {
+    "gestor": "gestor@teste.local",
+    "inPhase": "c18@teste.local",
+    "inPhaseRegistration": 1715162904,
+    "eliminated": "c21@teste.local",
+    "eliminatedRegistration": 413170950,
+    "outsider": "sem-inscricao@teste.local"
+  }
+}
