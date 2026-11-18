@@ -1,6 +1,6 @@
 <?php
 
-namespace Observacoes;
+namespace Comunicados;
 
 use DateTime;
 use MapasCulturais\App;
@@ -12,20 +12,20 @@ use MapasCulturais\Entities\Registration;
 use MapasCulturais\i;
 
 /**
- * Plugin de observações por fase.
+ * Plugin de comunicados por fase.
  *
- * O gestor publica observações (título, texto, imagem e anexos) em qualquer fase do edital.
- * Cada observação aparece na linha do tempo da inscrição de todos os inscritos daquela fase.
+ * O gestor publica comunicados (título, texto, imagem e anexos) em qualquer fase do edital.
+ * Cada comunicado aparece na linha do tempo da inscrição de todos os inscritos daquela fase.
  *
  * Modelo de dados (sem tabelas novas):
  *
- * - As observações do edital ficam no metadado privado `phaseObservations` (JSON) da primeira
+ * - Os comunicados do edital ficam no metadado privado `phaseAnnouncements` (JSON) da primeira
  *   fase (a oportunidade principal). Cada item guarda a fase a que pertence:
  *   `phaseType` ("opportunity" ou "evaluationmethodconfiguration") e `phaseId`, os mesmos
  *   identificadores dos itens da linha do tempo (`item.__objectType` e `item.id`).
- * - Imagens e anexos são arquivos PRIVADOS da primeira fase (grupos `phaseObservationImage` e
- *   `phaseObservationAttachment`), baixados pelo endpoint `phaseObservationFile`, que confere se o
- *   usuário é gestor ou tem inscrição na fase da observação.
+ * - Imagens e anexos são arquivos PRIVADOS da primeira fase (grupos `phaseAnnouncementImage` e
+ *   `phaseAnnouncementAttachment`), baixados pelo endpoint `phaseAnnouncementFile`, que confere se o
+ *   usuário é gestor ou tem inscrição na fase do comunicado.
  */
 class Plugin extends \MapasCulturais\Plugin
 {
@@ -34,9 +34,9 @@ class Plugin extends \MapasCulturais\Plugin
     /** Faixa de versões do Mapas Culturais em que o plugin foi testado */
     const TESTED_MAPAS_VERSIONS = '7.8';
 
-    const META_KEY = 'phaseObservations';
-    const IMAGE_GROUP = 'phaseObservationImage';
-    const ATTACHMENT_GROUP = 'phaseObservationAttachment';
+    const META_KEY = 'phaseAnnouncements';
+    const IMAGE_GROUP = 'phaseAnnouncementImage';
+    const ATTACHMENT_GROUP = 'phaseAnnouncementAttachment';
 
     const PHASE_OPPORTUNITY = 'opportunity';
     const PHASE_EVALUATION = 'evaluationmethodconfiguration';
@@ -47,7 +47,7 @@ class Plugin extends \MapasCulturais\Plugin
             // tamanho máximo de cada arquivo, em MB (o PHP/nginx também limitam o envio)
             'maxFileSizeMb' => 10,
 
-            // quantidade máxima de anexos por observação
+            // quantidade máxima de anexos por comunicado
             'maxAttachments' => 5,
 
             // tamanho máximo do texto
@@ -85,7 +85,7 @@ class Plugin extends \MapasCulturais\Plugin
         $this->checkMapasVersion();
 
         $app->hook('app.init:after', function () use ($app) {
-            $app->view->enqueueStyle('app-v2', 'observacoes', 'css/observacoes.css');
+            $app->view->enqueueStyle('app-v2', 'comunicados', 'css/comunicados.css');
         });
 
         $this->initEndpoints();
@@ -96,14 +96,14 @@ class Plugin extends \MapasCulturais\Plugin
     {
         $app = App::i();
 
-        // lista de observações do edital (privado: não aparece na API pública)
+        // lista de comunicados do edital (privado: não aparece na API pública)
         $this->registerOpportunityMetadata(self::META_KEY, [
-            'label' => i::__('Observações das fases'),
+            'label' => i::__('Comunicados das fases'),
             'type' => 'json',
             'private' => true,
         ]);
 
-        // arquivos privados: só saem pelo endpoint phaseObservationFile, que confere a permissão
+        // arquivos privados: só saem pelo endpoint phaseAnnouncementFile, que confere a permissão
         $app->registerFileGroup('opportunity', new FileGroup(
             self::IMAGE_GROUP,
             array_map(fn ($m) => '^' . preg_quote($m, '#') . '$', $this->config['imageMimeTypes']),
@@ -136,7 +136,7 @@ class Plugin extends \MapasCulturais\Plugin
         $version = trim((string) file_get_contents($version_file));
         if ($version && !str_starts_with($version, self::TESTED_MAPAS_VERSIONS . '.')) {
             App::i()->log->warning(sprintf(
-                'Plugin Observacoes %s foi testado com o Mapas Culturais %s.x; versão instalada: %s',
+                'Plugin Comunicados %s foi testado com o Mapas Culturais %s.x; versão instalada: %s',
                 self::VERSION,
                 self::TESTED_MAPAS_VERSIONS,
                 $version
@@ -145,14 +145,14 @@ class Plugin extends \MapasCulturais\Plugin
     }
 
     /* ---------------------------------------------------------------------
-     * Leitura e gravação das observações
+     * Leitura e gravação dos comunicados
      * ------------------------------------------------------------------- */
 
     /**
-     * Observações do edital (lidas sem passar pela checagem de metadado privado;
+     * Comunicados do edital (lidas sem passar pela checagem de metadado privado;
      * quem chama decide o que pode ser mostrado).
      */
-    function getObservations(Opportunity $opportunity): array
+    function getAnnouncements(Opportunity $opportunity): array
     {
         $first_phase = $opportunity->firstPhase;
         $value = $first_phase->getMetadata(self::META_KEY);
@@ -167,19 +167,19 @@ class Plugin extends \MapasCulturais\Plugin
     }
 
     /**
-     * Grava a lista de observações sem salvar a oportunidade inteira
-     * (salvar a oportunidade dispararia validações que não têm relação com as observações).
+     * Grava a lista de comunicados sem salvar a oportunidade inteira
+     * (salvar a oportunidade dispararia validações que não têm relação com os comunicados).
      */
-    function saveObservations(Opportunity $opportunity, array $observations): void
+    function saveAnnouncements(Opportunity $opportunity, array $announcements): void
     {
         $first_phase = $opportunity->firstPhase;
-        // setMetadata() não serializa: grava o JSON já pronto (getObservations() decodifica)
-        $first_phase->setMetadata(self::META_KEY, json_encode(array_values($observations), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // setMetadata() não serializa: grava o JSON já pronto (getAnnouncements() decodifica)
+        $first_phase->setMetadata(self::META_KEY, json_encode(array_values($announcements), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $first_phase->saveMetadata(true);
     }
 
     /**
-     * Fases do edital às quais uma observação pode pertencer, no formato dos itens da linha do tempo
+     * Fases do edital às quais um comunicado pode pertencer, no formato dos itens da linha do tempo
      *
      * @return array<string, Opportunity> chave "tipo:id" => oportunidade da fase
      */
@@ -269,9 +269,9 @@ class Plugin extends \MapasCulturais\Plugin
     }
 
     /**
-     * Observação no formato do front-end, com as URLs dos arquivos
+     * Comunicado no formato do front-end, com as URLs dos arquivos
      */
-    function serializeObservation(Opportunity $opportunity, array $observation): array
+    function serializeAnnouncement(Opportunity $opportunity, array $announcement): array
     {
         $app = App::i();
         $first_phase = $opportunity->firstPhase;
@@ -291,50 +291,50 @@ class Plugin extends \MapasCulturais\Plugin
         };
 
         return [
-            'id' => $observation['id'],
-            'phaseType' => $observation['phaseType'],
-            'phaseId' => (int) $observation['phaseId'],
-            'phaseLabel' => $this->getPhaseLabel($first_phase, $observation['phaseType'], (int) $observation['phaseId']),
-            'title' => (string) ($observation['title'] ?? ''),
-            'text' => (string) ($observation['text'] ?? ''),
-            'image' => $file($observation['imageId'] ?? null),
-            'attachments' => array_values(array_filter(array_map($file, (array) ($observation['attachmentIds'] ?? [])))),
-            'authorName' => (string) ($observation['authorName'] ?? ''),
-            'createTimestamp' => $observation['createTimestamp'] ?? null,
-            'updateTimestamp' => $observation['updateTimestamp'] ?? null,
+            'id' => $announcement['id'],
+            'phaseType' => $announcement['phaseType'],
+            'phaseId' => (int) $announcement['phaseId'],
+            'phaseLabel' => $this->getPhaseLabel($first_phase, $announcement['phaseType'], (int) $announcement['phaseId']),
+            'title' => (string) ($announcement['title'] ?? ''),
+            'text' => (string) ($announcement['text'] ?? ''),
+            'image' => $file($announcement['imageId'] ?? null),
+            'attachments' => array_values(array_filter(array_map($file, (array) ($announcement['attachmentIds'] ?? [])))),
+            'authorName' => (string) ($announcement['authorName'] ?? ''),
+            'createTimestamp' => $announcement['createTimestamp'] ?? null,
+            'updateTimestamp' => $announcement['updateTimestamp'] ?? null,
         ];
     }
 
     /**
-     * Observações visíveis numa inscrição: as das fases em que o número da inscrição está presente
+     * Comunicados visíveis numa inscrição: as das fases em que o número da inscrição está presente
      */
-    function getObservationsForRegistration(Registration $registration): array
+    function getAnnouncementsForRegistration(Registration $registration): array
     {
         $opportunity = $registration->opportunity->firstPhase;
         $result = [];
 
-        foreach ($this->getObservations($opportunity) as $observation) {
-            $phase = $this->getPhaseOpportunity($opportunity, (string) $observation['phaseType'], (int) $observation['phaseId']);
+        foreach ($this->getAnnouncements($opportunity) as $announcement) {
+            $phase = $this->getPhaseOpportunity($opportunity, (string) $announcement['phaseType'], (int) $announcement['phaseId']);
             if ($phase && $this->registrationNumberIsInPhase($phase, (string) $registration->number)) {
-                $result[] = $this->serializeObservation($opportunity, $observation);
+                $result[] = $this->serializeAnnouncement($opportunity, $announcement);
             }
         }
 
-        return $this->sortObservations($result);
+        return $this->sortAnnouncements($result);
     }
 
     /**
      * Mais recentes primeiro
      */
-    function sortObservations(array $observations): array
+    function sortAnnouncements(array $announcements): array
     {
-        usort($observations, fn ($a, $b) => strcmp((string) $b['createTimestamp'], (string) $a['createTimestamp']));
-        return $observations;
+        usort($announcements, fn ($a, $b) => strcmp((string) $b['createTimestamp'], (string) $a['createTimestamp']));
+        return $announcements;
     }
 
     function getFileUrl(Opportunity $first_phase, $file): string
     {
-        return App::i()->createUrl('opportunity', 'phaseObservationFile', [$first_phase->id, 'file' => $file->id]);
+        return App::i()->createUrl('opportunity', 'phaseAnnouncementFile', [$first_phase->id, 'file' => $file->id]);
     }
 
     /* ---------------------------------------------------------------------
@@ -429,12 +429,12 @@ class Plugin extends \MapasCulturais\Plugin
         $self = $this;
 
         /**
-         * Cria ou atualiza uma observação (multipart/form-data)
-         * POST /opportunity/savePhaseObservation/{id de qualquer fase do edital}
-         * campos: observationId (para editar), phaseType, phaseId, title, text, removeImage (1),
+         * Cria ou atualiza um comunicado (multipart/form-data)
+         * POST /opportunity/savePhaseAnnouncement/{id de qualquer fase do edital}
+         * campos: announcementId (para editar), phaseType, phaseId, title, text, removeImage (1),
          *         removeAttachmentIds[] ; arquivos: image, attachments[]
          */
-        $app->hook('POST(opportunity.savePhaseObservation)', function () use ($app, $self) {
+        $app->hook('POST(opportunity.savePhaseAnnouncement)', function () use ($app, $self) {
             /** @var \MapasCulturais\Controllers\Opportunity $this */
             $this->requireAuthentication();
 
@@ -453,21 +453,21 @@ class Plugin extends \MapasCulturais\Plugin
             $title = trim((string) ($data['title'] ?? ''));
             $text = trim(str_replace("\r\n", "\n", (string) ($data['text'] ?? '')));
 
-            $observations = $self->getObservations($first_phase);
-            $editing_id = (string) ($data['observationId'] ?? '');
+            $announcements = $self->getAnnouncements($first_phase);
+            $editing_id = (string) ($data['announcementId'] ?? '');
             $index = null;
             if ($editing_id !== '') {
-                foreach ($observations as $i => $obs) {
+                foreach ($announcements as $i => $obs) {
                     if ($obs['id'] === $editing_id) {
                         $index = $i;
                     }
                 }
                 if ($index === null) {
-                    $this->errorJson(i::__('Observação não encontrada.'), 404);
+                    $this->errorJson(i::__('Comunicado não encontrado.'), 404);
                 }
                 // ao editar, a fase não muda
-                $phase_type = $observations[$index]['phaseType'];
-                $phase_id = (int) $observations[$index]['phaseId'];
+                $phase_type = $announcements[$index]['phaseType'];
+                $phase_id = (int) $announcements[$index]['phaseId'];
             }
 
             if (!$self->getPhaseOpportunity($first_phase, $phase_type, $phase_id)) {
@@ -500,8 +500,8 @@ class Plugin extends \MapasCulturais\Plugin
                 }
             }
 
-            $current = $index !== null ? $observations[$index] : [
-                'id' => 'obs_' . bin2hex(random_bytes(8)),
+            $current = $index !== null ? $announcements[$index] : [
+                'id' => 'com_' . bin2hex(random_bytes(8)),
                 'phaseType' => $phase_type,
                 'phaseId' => $phase_id,
                 'imageId' => null,
@@ -517,7 +517,7 @@ class Plugin extends \MapasCulturais\Plugin
             ));
 
             if (count($kept_attachments) + count($attachment_uploads) > $self->config['maxAttachments']) {
-                $this->errorJson(['attachments' => [sprintf(i::__('Cada observação pode ter no máximo %d anexos.'), $self->config['maxAttachments'])]], 400);
+                $this->errorJson(['attachments' => [sprintf(i::__('Cada comunicado pode ter no máximo %d anexos.'), $self->config['maxAttachments'])]], 400);
             }
 
             $will_have_image = $image_uploads || (!empty($current['imageId']) && empty($data['removeImage']));
@@ -548,21 +548,21 @@ class Plugin extends \MapasCulturais\Plugin
             $current['attachmentIds'] = $kept_attachments;
             if ($index !== null) {
                 $current['updateTimestamp'] = (new DateTime())->format('Y-m-d H:i:s');
-                $observations[$index] = $current;
+                $announcements[$index] = $current;
             } else {
-                $observations[] = $current;
+                $announcements[] = $current;
             }
 
-            $self->saveObservations($first_phase, $observations);
+            $self->saveAnnouncements($first_phase, $announcements);
 
-            $this->json($self->serializeObservation($first_phase, $current));
+            $this->json($self->serializeAnnouncement($first_phase, $current));
         });
 
         /**
-         * Exclui uma observação (e os seus arquivos)
-         * POST /opportunity/deletePhaseObservation/{id de qualquer fase do edital}   dados: observationId
+         * Exclui um comunicado (e os seus arquivos)
+         * POST /opportunity/deletePhaseAnnouncement/{id de qualquer fase do edital}   dados: announcementId
          */
-        $app->hook('POST(opportunity.deletePhaseObservation)', function () use ($app, $self) {
+        $app->hook('POST(opportunity.deletePhaseAnnouncement)', function () use ($app, $self) {
             /** @var \MapasCulturais\Controllers\Opportunity $this */
             $this->requireAuthentication();
 
@@ -574,12 +574,12 @@ class Plugin extends \MapasCulturais\Plugin
             $first_phase = $opportunity->firstPhase;
             $first_phase->checkPermission('@control');
 
-            // "observationId" vem no corpo (JSON ou formulário); "id" é o da URL (a oportunidade)
-            $id = (string) ($this->postData['observationId'] ?? $_POST['observationId'] ?? '');
-            $observations = $self->getObservations($first_phase);
+            // "announcementId" vem no corpo (JSON ou formulário); "id" é o da URL (a oportunidade)
+            $id = (string) ($this->postData['announcementId'] ?? $_POST['announcementId'] ?? '');
+            $announcements = $self->getAnnouncements($first_phase);
             $kept = [];
             $found = null;
-            foreach ($observations as $obs) {
+            foreach ($announcements as $obs) {
                 if ($obs['id'] === $id) {
                     $found = $obs;
                 } else {
@@ -588,7 +588,7 @@ class Plugin extends \MapasCulturais\Plugin
             }
 
             if (!$found) {
-                $this->errorJson(i::__('Observação não encontrada.'), 404);
+                $this->errorJson(i::__('Comunicado não encontrado.'), 404);
             }
 
             $self->deleteFile($first_phase, $found['imageId'] ?? null);
@@ -596,16 +596,16 @@ class Plugin extends \MapasCulturais\Plugin
                 $self->deleteFile($first_phase, $file_id);
             }
 
-            $self->saveObservations($first_phase, $kept);
+            $self->saveAnnouncements($first_phase, $kept);
             $this->json(true);
         });
 
         /**
-         * Baixa (ou mostra, se for imagem) um arquivo de observação
-         * GET /opportunity/phaseObservationFile/{id da primeira fase}/file:{id do arquivo}
-         * Pode: gestor do edital, ou quem tem inscrição na fase da observação.
+         * Baixa (ou mostra, se for imagem) um arquivo de comunicado
+         * GET /opportunity/phaseAnnouncementFile/{id da primeira fase}/file:{id do arquivo}
+         * Pode: gestor do edital, ou quem tem inscrição na fase do comunicado.
          */
-        $app->hook('GET(opportunity.phaseObservationFile)', function () use ($app, $self) {
+        $app->hook('GET(opportunity.phaseAnnouncementFile)', function () use ($app, $self) {
             /** @var \MapasCulturais\Controllers\Opportunity $this */
             $this->requireAuthentication();
 
@@ -618,17 +618,17 @@ class Plugin extends \MapasCulturais\Plugin
             $file_id = (int) ($this->data['file'] ?? 0);
             $file = $app->repo('OpportunityFile')->find($file_id);
 
-            $observation = null;
-            foreach ($self->getObservations($first_phase) as $obs) {
+            $announcement = null;
+            foreach ($self->getAnnouncements($first_phase) as $obs) {
                 $ids = array_map('intval', array_merge([(int) ($obs['imageId'] ?? 0)], (array) ($obs['attachmentIds'] ?? [])));
                 if (in_array($file_id, $ids, true)) {
-                    $observation = $obs;
+                    $announcement = $obs;
                 }
             }
 
-            $allowed = $file && $observation && $file->owner?->equals($first_phase);
+            $allowed = $file && $announcement && $file->owner?->equals($first_phase);
             if ($allowed && !$first_phase->canUser('@control')) {
-                $phase = $self->getPhaseOpportunity($first_phase, (string) $observation['phaseType'], (int) $observation['phaseId']);
+                $phase = $self->getPhaseOpportunity($first_phase, (string) $announcement['phaseType'], (int) $announcement['phaseId']);
                 $allowed = $phase && $self->userHasRegistrationInPhase($phase);
             }
 
@@ -663,7 +663,7 @@ class Plugin extends \MapasCulturais\Plugin
         $app = App::i();
         $self = $this;
 
-        // gestor: dados de todas as observações do edital, para a Configuração de fases
+        // gestor: dados de todas os comunicados do edital, para a Configuração de fases
         $app->hook('template(opportunity.edit.tabs):end', function () use ($self) {
             /** @var \MapasCulturais\Themes\BaseV2\Theme $this */
             $opportunity = $this->controller->requestedEntity;
@@ -672,31 +672,31 @@ class Plugin extends \MapasCulturais\Plugin
             }
 
             $first_phase = $opportunity->firstPhase;
-            $this->jsObject['config']['phaseObservationsConfig'] = [
+            $this->jsObject['config']['phaseAnnouncementsConfig'] = [
                 'opportunityId' => $first_phase->id,
                 'maxFileSizeMb' => $self->config['maxFileSizeMb'],
                 'maxAttachments' => $self->config['maxAttachments'],
                 'maxTextLength' => $self->config['maxTextLength'],
                 'imageAccept' => implode(',', $self->config['imageMimeTypes']),
                 'attachmentAccept' => implode(',', $self->config['attachmentMimeTypes']),
-                'observations' => $self->sortObservations(array_map(
-                    fn ($obs) => $self->serializeObservation($first_phase, $obs),
-                    $self->getObservations($first_phase)
+                'announcements' => $self->sortAnnouncements(array_map(
+                    fn ($obs) => $self->serializeAnnouncement($first_phase, $obs),
+                    $self->getAnnouncements($first_phase)
                 )),
             ];
-            $this->import('phase-observations-config');
+            $this->import('phase-announcements-config');
         });
 
-        // gestor: seção "Observações" no fim de cada fase da Configuração de fases
+        // gestor: seção "Comunicados" no fim de cada fase da Configuração de fases
         foreach (['opportunity-phase-config-data-collection', 'opportunity-phase-config-evaluation', 'opportunity-phase-config-results'] as $component) {
             $app->hook("component({$component}):bottom", function () {
                 /** @var \MapasCulturais\Themes\BaseV2\Theme $this */
-                $this->import('phase-observations-config');
-                echo '<phase-observations-config :phase="phase"></phase-observations-config>';
+                $this->import('phase-announcements-config');
+                echo '<phase-announcements-config :phase="phase"></phase-announcements-config>';
             });
         }
 
-        // candidato: observações das fases em que a inscrição da página está
+        // candidato: comunicados das fases em que a inscrição da página está
         $app->hook('template(registration.<<view|single>>.single-tab):begin', function () use ($self) {
             /** @var \MapasCulturais\Themes\BaseV2\Theme $this */
             $registration = $this->controller->requestedEntity;
@@ -704,14 +704,14 @@ class Plugin extends \MapasCulturais\Plugin
                 return;
             }
 
-            $this->jsObject['config']['phaseObservations'] = $self->getObservationsForRegistration($registration);
+            $this->jsObject['config']['phaseAnnouncements'] = $self->getAnnouncementsForRegistration($registration);
         });
 
-        // candidato: quadros [Observação] no fim de cada item da linha do tempo
+        // candidato: quadros [Comunicado] no fim de cada item da linha do tempo
         $app->hook('component(opportunity-phases-timeline).item:end', function () {
             /** @var \MapasCulturais\Themes\BaseV2\Theme $this */
-            $this->import('phase-observations-timeline');
-            echo '<phase-observations-timeline :phase="item"></phase-observations-timeline>';
+            $this->import('phase-announcements-timeline');
+            echo '<phase-announcements-timeline :phase="item"></phase-announcements-timeline>';
         });
     }
 }

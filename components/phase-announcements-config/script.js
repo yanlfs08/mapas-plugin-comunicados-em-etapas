@@ -1,10 +1,10 @@
 /**
- * Seção "Observações para os inscritos desta fase", no fim de cada fase da Configuração de fases.
- * Os dados vêm de $MAPAS.config.phaseObservationsConfig (todas as observações do edital).
+ * Seção "Comunicados aos inscritos desta fase", no fim de cada fase da Configuração de fases.
+ * Os dados vêm de $MAPAS.config.phaseAnnouncementsConfig (todas os comunicados do edital).
  * O envio é multipart (FormData), por causa da imagem e dos anexos.
  */
-app.component('phase-observations-config', {
-    template: $TEMPLATES['phase-observations-config'],
+app.component('phase-announcements-config', {
+    template: $TEMPLATES['phase-announcements-config'],
 
     props: {
         // fase da Configuração de fases: oportunidade (coleta/resultado) ou configuração de avaliação
@@ -15,16 +15,16 @@ app.component('phase-observations-config', {
     },
 
     setup() {
-        const text = Utils.getTexts('phase-observations-config');
+        const text = Utils.getTexts('phase-announcements-config');
         const messages = useMessages();
         return { text, messages };
     },
 
     data() {
-        const config = $MAPAS.config.phaseObservationsConfig || null;
+        const config = $MAPAS.config.phaseAnnouncementsConfig || null;
         return {
             config,
-            observations: config ? config.observations.filter((obs) => this.belongs(obs)) : [],
+            announcements: config ? config.announcements.filter((obs) => this.belongs(obs)) : [],
             formOpen: false,
             saving: false,
             form: this.emptyForm(),
@@ -63,13 +63,13 @@ app.component('phase-observations-config', {
             };
         },
 
-        newObservation() {
+        newAnnouncement() {
             this.form = this.emptyForm();
             this.formOpen = true;
             this.$nextTick(() => this.resetFileInputs());
         },
 
-        editObservation(obs) {
+        editAnnouncement(obs) {
             this.form = {
                 id: obs.id,
                 title: obs.title,
@@ -102,7 +102,7 @@ app.component('phase-observations-config', {
         async save() {
             const data = new FormData();
             if (this.form.id) {
-                data.append('observationId', this.form.id);
+                data.append('announcementId', this.form.id);
             }
             data.append('phaseType', this.phaseType);
             data.append('phaseId', this.phase.id);
@@ -132,7 +132,7 @@ app.component('phase-observations-config', {
 
             this.saving = true;
             try {
-                const url = Utils.createUrl('opportunity', 'savePhaseObservation', [this.config.opportunityId]);
+                const url = Utils.createUrl('opportunity', 'savePhaseAnnouncement', [this.config.opportunityId]);
                 const response = await fetch(url, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
                 const body = await response.json().catch(() => null);
 
@@ -140,9 +140,9 @@ app.component('phase-observations-config', {
                     throw body?.data ?? this.text('Erro ao salvar');
                 }
 
-                const i = this.observations.findIndex((obs) => obs.id === body.id);
-                i >= 0 ? this.observations.splice(i, 1, body) : this.observations.unshift(body);
-                this.messages.success(this.form.id ? this.text('Observação atualizada') : this.text('Observação publicada'));
+                const i = this.announcements.findIndex((obs) => obs.id === body.id);
+                i >= 0 ? this.announcements.splice(i, 1, body) : this.announcements.unshift(body);
+                this.messages.success(this.form.id ? this.text('Comunicado atualizado') : this.text('Comunicado publicado'));
                 this.cancel();
             } catch (error) {
                 this.messages.error(this.errorText(error));
@@ -152,18 +152,18 @@ app.component('phase-observations-config', {
 
         async remove(obs) {
             try {
-                const url = Utils.createUrl('opportunity', 'deletePhaseObservation', [this.config.opportunityId]);
+                const url = Utils.createUrl('opportunity', 'deletePhaseAnnouncement', [this.config.opportunityId]);
                 const response = await fetch(url, {
                     method: 'POST',
-                    body: JSON.stringify({ observationId: obs.id }),
+                    body: JSON.stringify({ announcementId: obs.id }),
                     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
                 });
                 const body = await response.json().catch(() => null);
                 if (!response.ok || (body && body.error)) {
                     throw body?.data ?? this.text('Erro ao excluir');
                 }
-                this.observations = this.observations.filter((item) => item.id !== obs.id);
-                this.messages.success(this.text('Observação excluída'));
+                this.announcements = this.announcements.filter((item) => item.id !== obs.id);
+                this.messages.success(this.text('Comunicado excluído'));
             } catch (error) {
                 this.messages.error(this.errorText(error));
             }
