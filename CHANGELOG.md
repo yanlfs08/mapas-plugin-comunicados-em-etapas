@@ -14,10 +14,11 @@ Primeira versão, testada no Mapas Culturais 7.8.21.
 
 ### Nome
 
-O primeiro commit do repositório chamava o plugin de **Observações** (`Observacoes`). Antes de qualquer instalação em produção, ele foi renomeado para **Comunicados**:
+O primeiro commit do repositório chamava o plugin de **Observações** (`Observacoes`), e o repositório se chamava `mapas-plugin-observacao-em-etapas` (o GitHub redireciona o endereço antigo). Antes de qualquer instalação em produção, tudo foi renomeado para **Comunicados**:
 
 | Antes | Agora |
 |---|---|
+| repositório `mapas-plugin-observacao-em-etapas` | `mapas-plugin-comunicados-em-etapas` |
 | pasta e namespace `Observacoes` | `Comunicados` |
 | metadado `phaseObservations` | `phaseAnnouncements` |
 | grupos de arquivo `phaseObservationImage` / `phaseObservationAttachment` | `phaseAnnouncementImage` / `phaseAnnouncementAttachment` |

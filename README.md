@@ -80,7 +80,7 @@ O plugin **não cria tabelas** e **não precisa de `db-update`**. Ele usa metada
 
 ## Instalação
 
-O plugin precisa ficar na pasta **`src/plugins/Comunicados`** do Mapas. O nome da pasta tem que ser exatamente `Comunicados`, porque é também o namespace PHP do plugin. Por isso o `git clone` abaixo informa o nome da pasta no fim.
+O plugin precisa ficar na pasta **`src/plugins/Comunicados`** do Mapas. O nome da pasta tem que ser exatamente `Comunicados`, porque é também o namespace PHP do plugin. Por isso o `git clone` abaixo informa o nome da pasta no fim (sem ele, a pasta teria o nome do repositório).
 
 ### A) Instalação direta (sem Docker)
 
@@ -88,7 +88,7 @@ O plugin precisa ficar na pasta **`src/plugins/Comunicados`** do Mapas. O nome d
 
    ```bash
    cd /caminho/do/mapas/src/plugins
-   git clone https://github.com/yanlfs08/mapas-plugin-observacao-em-etapas.git Comunicados
+   git clone https://github.com/yanlfs08/mapas-plugin-comunicados-em-etapas.git Comunicados
    ```
 
 2. **Ative o plugin.** Abra o arquivo de configuração de plugins que a sua instalação usa (por exemplo, `config/plugins.php` ou um arquivo dentro de `config/*.d/`) e acrescente `Comunicados` à lista, **sem remover os plugins que já existem**:
@@ -136,7 +136,7 @@ Por isso, toda instalação ou atualização do plugin exige **gerar a imagem de
 
    ```bash
    cd /caminho/do/projeto-base/plugins
-   git clone https://github.com/yanlfs08/mapas-plugin-observacao-em-etapas.git Comunicados
+   git clone https://github.com/yanlfs08/mapas-plugin-comunicados-em-etapas.git Comunicados
    ```
 
 2. **Ative o plugin** em `docker/common/config.d/plugins.php`:

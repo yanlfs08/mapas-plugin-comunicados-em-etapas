@@ -6,7 +6,7 @@ Contexto para o Claude Code trabalhar neste repositório. Responda em português
 
 Plugin do Mapas Culturais (v7.8.x, tema BaseV2) para o gestor publicar **comunicados** (título, texto, imagem e anexos) em qualquer fase de um edital. Cada comunicado aparece na linha do tempo da inscrição de **todos os inscritos daquela fase**. Versão testada do Mapas: **7.8.21**.
 
-Instalação: este repositório inteiro vira a pasta `src/plugins/Comunicados` do Mapas (o nome do repositório no GitHub é `mapas-plugin-observacao-em-etapas`, por isso o `git clone` informa a pasta). Para ativar, acrescente `'Comunicados' => ['namespace' => 'Comunicados']` em `config['plugins']` e limpe o cache. Não cria tabelas nem precisa de db-update.
+Instalação: este repositório inteiro vira a pasta `src/plugins/Comunicados` do Mapas (repositório `yanlfs08/mapas-plugin-comunicados-em-etapas`; o `git clone` informa a pasta `Comunicados`, que é também o namespace). Para ativar, acrescente `'Comunicados' => ['namespace' => 'Comunicados']` em `config['plugins']` e limpe o cache. Não cria tabelas nem precisa de db-update.
 
 ## Requisitos funcionais (definidos pelo usuário)
 
